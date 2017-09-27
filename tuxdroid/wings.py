@@ -4,7 +4,11 @@ import logging
 import time
 import types
 
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except RuntimeError:
+    from unittest.mock import MagicMock
+    GPIO = MagicMock()
 
 # Bounce time for rising edge detection: 100ms
 BOUNCE_TIME = 0.1

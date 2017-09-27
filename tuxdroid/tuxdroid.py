@@ -1,7 +1,11 @@
 import asyncio
 import logging
 
-import RPi.GPIO as GPIO
+try:
+    import RPi.GPIO as GPIO
+except RuntimeError:
+    from unittest.mock import MagicMock
+    GPIO = MagicMock()
 
 from tuxdroid.wings import Wings
 
