@@ -1,15 +1,17 @@
-import asyncio
+"""Module defining TuxDroid robot"""
 import logging
 
 try:
     import RPi.GPIO as GPIO
 except RuntimeError:
-    from unittest.mock import MagicMock
-    GPIO = MagicMock()
+    from tuxdroid import fake_gpui as GPIO
 
 from tuxdroid.wings import Wings
 
+
 class TuxDroid():
+    """TuxDroid main class"""
+
     def __init__(self, config, logging_level=logging.INFO):
         # Get logger
         self.logging_level = logging_level
@@ -24,6 +26,7 @@ class TuxDroid():
         self.wings = Wings(self.config['wings'])
 
     def _get_logger(self):
+        """Get logger"""
         self.logger = logging.getLogger("tuxdroid")
         self.logger.setLevel(self.logging_level)
         console_handler = logging.StreamHandler()
@@ -32,19 +35,5 @@ class TuxDroid():
         self.logger.addHandler(console_handler)
 
     def stop(self):
+        """Stop all TuxDroid parts"""
         self.wings.stop()
-
-    def run(self):
-        """Startup function for main loop"""
-        asyncio.set_event_loop(self._async_loop)
-        self.logger.info("Starting subtasker for %s", self.component.name)
-        tasks = [self._send_alive(),
-                 self.component.settings.read(watch=True),
-                 self.component.settings.read_global(watch=True),
-                 # self._wait_for_reload(),
-                 ]
-        try:
-            self._async_loop.run_until_complete(asyncio.wait(tasks))
-        except RuntimeError:
-            # Do we have to do something ?
-            pass

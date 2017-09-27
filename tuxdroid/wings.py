@@ -1,4 +1,4 @@
-import asyncio
+"""Module defining TuxDroid Wings"""
 from concurrent.futures import ThreadPoolExecutor
 import logging
 import time
@@ -7,13 +7,13 @@ import types
 try:
     import RPi.GPIO as GPIO
 except RuntimeError:
-    from unittest.mock import MagicMock
-    GPIO = MagicMock()
+    from tuxdroid import fake_gpui as GPIO
 
 # Bounce time for rising edge detection: 100ms
 BOUNCE_TIME = 0.1
 # TODO Improve button bounce time
 BUTTON_BOUNCE_TIME = 0.25
+
 
 class Wings():
     """Wings Component
@@ -21,7 +21,7 @@ class Wings():
     .. todo:: Missing wings speed control (using PWM, need to find PWN frequency/duty cycle)
     """
 
-    def __init__(self, config: dict, right_callbacks: set=None, left_callbacks: set=None):
+    def __init__(self, config: dict, right_callbacks: set = None, left_callbacks: set = None):
         # Get logger
         self.logger = logging.getLogger("tuxdroid").getChild("wings")
         # TODO validate config
@@ -122,7 +122,6 @@ class Wings():
             self.logger.info("Deleting callback `%s` for `%s` wing", callback.__name__, side)
             callbacks.remove(callback)
 
-
     def calibrate(self):
         """Moving Wings 3 times and try to put them down
 
@@ -132,7 +131,6 @@ class Wings():
         # Init variables
         wings_dectection = None
         last_wings_detection = None
-        last_moving_sensor = None
         last_dectection_time = None
         # Movement counter
         wings_nb_moves = 0
@@ -141,7 +139,7 @@ class Wings():
         # Start init
         while wings_nb_moves < 4 or self.position == "UP":
             # Wait for Rising edge
-            moving_sensor = GPIO.wait_for_edge(self.moving_sensor, GPIO.RISING)
+            GPIO.wait_for_edge(self.moving_sensor, GPIO.RISING)
             # Time between each detection
             wings_dectection = time.time()
             # We need at least one another detection
@@ -172,7 +170,7 @@ class Wings():
                               callback=self._wings_rotation_callback,
                               bouncetime=int(BOUNCE_TIME * 1000))
 
-    def _wings_rotation_callback(self, channel):
+    def _wings_rotation_callback(self, channel):  # pylint: disable=W0613
         """Callback method detecting wings movement
 
         The method is called each time wings are up or down
@@ -186,7 +184,7 @@ class Wings():
             return
         # Check if the wings are calibrated
         if not self.is_calibrated:
-            return 
+            return
         self.logger.debug("Moving detection - Current position: %s", self.position)
         if self.position == "UP":
             self.position = "DOWN"
@@ -199,7 +197,7 @@ class Wings():
         else:
             raise Exception("Bad posistion")
 
-    def start(self, speed=70):
+    def start(self):
         """Start moving wings"""
         if not self.is_moving:
             self.bad_detect = True
@@ -226,7 +224,7 @@ class Wings():
         # Stop moving
         self.stop()
 
-    def up(self):
+    def up(self):  # pylint: disable=C0103
         """Move wings up"""
         self.logger.info("Move wings up")
         self.set_position("UP")
@@ -246,7 +244,7 @@ class Wings():
         self.start()
         while self._count != times:
             # Wait for the count
-            pass 
+            pass
         # Stop moving
         self.stop()
         self._count = 0
