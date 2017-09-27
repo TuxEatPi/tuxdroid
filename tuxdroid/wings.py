@@ -4,10 +4,9 @@ import logging
 import time
 import types
 
-try:
-    import RPi.GPIO as GPIO
-except RuntimeError:
-    from tuxdroid import fake_gpui as GPIO
+from tuxdroid.gpio import GPIO
+from tuxdroid.errors import TuxDroidWingsError
+
 
 # Bounce time for rising edge detection: 100ms
 BOUNCE_TIME = 0.1
@@ -20,12 +19,15 @@ class Wings():
 
     .. todo:: Missing wings speed control (using PWM, need to find PWN frequency/duty cycle)
     """
-
-    def __init__(self, config: dict, right_callbacks: set = None, left_callbacks: set = None):
+    def __init__(self, config: dict):
         # Get logger
         self.logger = logging.getLogger("tuxdroid").getChild("wings")
+        # static attributes
+        self._gpio_names = ('left_button', 'right_button', 'moving_sensor',
+                            'motor_direction_1', 'motor_direction_2')
         # TODO validate config
         self.config = config
+        self._check_config()
         # Set attributes
         self.is_ready = False
         self.is_moving = False
@@ -34,30 +36,21 @@ class Wings():
         self._count = 0
         # Set GPUIO
         GPIO.setmode(GPIO.BCM)
+
         self.left_button = int(config.get("gpio").get('left_button'))
         GPIO.setup(self.left_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
         self.right_button = int(config.get("gpio").get('right_button'))
         GPIO.setup(self.right_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
         self.moving_sensor = int(config.get("gpio").get('moving_sensor'))
         GPIO.setup(self.moving_sensor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
         self.motor_direction_1 = int(config.get("gpio").get('motor_direction_1'))
         GPIO.setup(self.motor_direction_1, GPIO.OUT)
-
         self.motor_direction_2 = int(config.get("gpio").get('motor_direction_2'))
         GPIO.setup(self.motor_direction_2, GPIO.OUT)
 
         # Callbacks
-        if right_callbacks is None:
-            self._right_callbacks = set()
-        else:
-            self._right_callbacks = right_callbacks
-        if left_callbacks is None:
-            self._left_callbacks = set()
-        else:
-            self._left_callbacks = left_callbacks
+        self._right_callbacks = set()
+        self._left_callbacks = set()
         # Thread pool
         self.thread_pool = ThreadPoolExecutor()
 
@@ -67,6 +60,19 @@ class Wings():
         self.logger.info("Wings calibration done")
         self._set_callbacks()
         self.is_ready = True
+
+    def _check_config(self):
+        """Validate config"""
+        if not self.config.get('gpio'):
+            raise TuxDroidWingsError("Missing `gpio` section in wings config")
+        for gpio_name in self._gpio_names:
+            if gpio_name not in self.config.get('gpio'):
+                raise TuxDroidWingsError("Missing `%s` section in `gpio` section "
+                                         "in wings config", gpio_name)
+            try:
+                int(self.config.get('gpio').get(gpio_name))
+            except ValueError:
+                raise TuxDroidWingsError("`gpio.%s` should be a integer", gpio_name)
 
     def _button_detected(self, channel):
         """Callback for all buttons"""
@@ -97,9 +103,9 @@ class Wings():
     def add_callback(self, side: str, callback):
         """Add callback"""
         if side not in ("left", "right"):
-            raise Exception("Bad side, should be 'left' or 'right'")
+            raise TuxDroidWingsError("Bad side, should be 'left' or 'right'")
         if not isinstance(callback, types.FunctionType):
-            raise Exception("Callback `%s` is not a function", callback)
+            raise TuxDroidWingsError("Callback `%s` is not a function", callback)
 
         callbacks = getattr(self, "_{}_callbacks".format(side))
         if callback in callbacks:
@@ -112,7 +118,7 @@ class Wings():
     def del_callback(self, side: str, callback):
         """Delete callback"""
         if side not in ("left", "right"):
-            raise Exception("Bad side, should be 'left' or 'right'")
+            raise TuxDroidWingsError("Bad side, should be 'left' or 'right'")
 
         callbacks = getattr(self, "_{}_callbacks".format(side))
         if callback not in callbacks:
@@ -181,9 +187,11 @@ class Wings():
             return
         # Check if the wings are moving
         if not self.is_moving:
+            self.logger.error("Wings are not moving")
             return
         # Check if the wings are calibrated
         if not self.is_calibrated:
+            self.logger.error("Wings are not calibrated")
             return
         self.logger.debug("Moving detection - Current position: %s", self.position)
         if self.position == "UP":
@@ -195,7 +203,7 @@ class Wings():
             self._count += 1
             self.logger.info("Position UP")
         else:
-            raise Exception("Bad posistion")
+            raise TuxDroidWingsError("Bad posistion")
 
     def start(self):
         """Start moving wings"""
@@ -210,7 +218,7 @@ class Wings():
         position = position.upper()
         if position not in ["UP", "DOWN"]:
             self.logger.error("Bad wings position")
-            raise Exception("Bad position")
+            raise TuxDroidWingsError("Bad position")
         # Do nothing if already in position
         if self.position == position:
             self.logger.info("Wings already in %s position", position)

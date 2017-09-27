@@ -1,12 +1,12 @@
 """Module defining TuxDroid robot"""
 import logging
+import os
 
-try:
-    import RPi.GPIO as GPIO
-except RuntimeError:
-    from tuxdroid import fake_gpui as GPIO
+import yaml
 
+from tuxdroid.gpio import GPIO, FAKE_GPIO
 from tuxdroid.wings import Wings
+from tuxdroid.errors import TuxDroidError
 
 
 class TuxDroid():
@@ -20,8 +20,13 @@ class TuxDroid():
         # Set GPIO
         GPIO.setmode(GPIO.BCM)
 
-        # GPIO
-        self.config = config
+        self._parts = ('wings',)
+        # Configuration
+        self._config = config
+        self._check_config()
+        # Handle fake GPIO
+        if FAKE_GPIO:
+            GPIO.set_config_(self.config)
         # Wings
         self.wings = Wings(self.config['wings'])
 
@@ -34,6 +39,20 @@ class TuxDroid():
         console_handler.setFormatter(formatter)
         self.logger.addHandler(console_handler)
 
+    def _check_config(self):
+        """Validate config"""
+        if isinstance(self._config, str) and os.path.isfile(self._config):
+            with open(self._config) as fhc:
+                self.config = yaml.load(fhc)
+        elif isinstance(self._config, dict):
+            self.config = self._config
+        else:
+            raise TuxDroidError("`config` argument should be a string (yaml file path) or a dict")
+        for part in self._parts:
+            if part not in self.config:
+                raise TuxDroidError("Part %s is missing from configuration", part)
+
     def stop(self):
         """Stop all TuxDroid parts"""
         self.wings.stop()
+        GPIO.cleanup()

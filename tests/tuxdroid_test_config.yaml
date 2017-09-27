@@ -1,0 +1,7 @@
+wings:
+    gpio:
+        left_button: 5
+        right_button: 6
+        moving_sensor: 26
+        motor_direction_1: 19
+        motor_direction_2: 13
