@@ -21,44 +21,44 @@ class Wings():
     """
     def __init__(self, config: dict):
         # Get logger
-        self.logger = logging.getLogger("tuxdroid").getChild("wings")
-        # static attributes
-        self._gpio_names = ('left_button', 'right_button', 'moving_sensor',
-                            'motor_direction_1', 'motor_direction_2')
-        # TODO validate config
-        self.config = config
-        self._check_config()
+        self._logger = logging.getLogger("tuxdroid").getChild("wings")
         # Set attributes
         self.is_ready = False
         self.is_moving = False
         self.is_calibrated = False
         self.position = None
+        # Privates
         self._count = 0
+        self._bad_first_detect_on_move = False
+        self._gpio_names = ('left_button', 'right_button', 'moving_sensor',
+                            'motor_direction_1', 'motor_direction_2')
+        # Validate config
+        self.config = config
+        self._check_config()
         # Set GPUIO
         GPIO.setmode(GPIO.BCM)
-
-        self.left_button = int(config.get("gpio").get('left_button'))
-        GPIO.setup(self.left_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        self.right_button = int(config.get("gpio").get('right_button'))
-        GPIO.setup(self.right_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self._left_button = int(config.get("gpio").get('left_button'))
+        GPIO.setup(self._left_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self._right_button = int(config.get("gpio").get('right_button'))
+        GPIO.setup(self._right_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         self.moving_sensor = int(config.get("gpio").get('moving_sensor'))
         GPIO.setup(self.moving_sensor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        self.motor_direction_1 = int(config.get("gpio").get('motor_direction_1'))
-        GPIO.setup(self.motor_direction_1, GPIO.OUT)
-        self.motor_direction_2 = int(config.get("gpio").get('motor_direction_2'))
-        GPIO.setup(self.motor_direction_2, GPIO.OUT)
-
+        self._motor_direction_1 = int(config.get("gpio").get('motor_direction_1'))
+        GPIO.setup(self._motor_direction_1, GPIO.OUT)
+        self._motor_direction_2 = int(config.get("gpio").get('motor_direction_2'))
+        GPIO.setup(self._motor_direction_2, GPIO.OUT)
         # Callbacks
         self._right_callbacks = set()
         self._left_callbacks = set()
         # Thread pool
-        self.thread_pool = ThreadPoolExecutor()
-
+        self._thread_pool = ThreadPoolExecutor()
         # Calibration
-        self.logger.info("Wings calibration starting")
+        self._logger.info("Wings calibration starting")
         self.calibrate()
-        self.logger.info("Wings calibration done")
+        self._logger.info("Wings calibration done")
+        # Set callbacks
         self._set_callbacks()
+        # Set it as ready
         self.is_ready = True
 
     def _check_config(self):
@@ -76,23 +76,24 @@ class Wings():
 
     def _button_detected(self, channel):
         """Callback for all buttons"""
-        self.logger.info("Button %s pressed", channel)
+        self._logger.info("Button %s pressed", channel)
         # callbacks
-        if channel == self.right_button:
+        if channel == self._right_button:
             for callback in self._right_callbacks:
-                self.logger.debug("Calling: %s", callback.__name__)
-                self.thread_pool.submit(callback)
-        elif channel == self.left_button:
+                self._logger.debug("Calling: %s", callback.__name__)
+                self._thread_pool.submit(callback)
+        elif channel == self._left_button:
             for callback in self._left_callbacks:
-                self.logger.debug("Calling: %s", callback.__name__)
-                self.thread_pool.submit(callback)
+                self._logger.debug("Calling: %s", callback.__name__)
+                self._thread_pool.submit(callback)
         else:
             # Should be impossible
-            self.logger.error("Bad button")
+            self._logger.error("Bad button")
 
     def _set_callbacks(self):
         """Set button callbacks"""
         for button in ["left_button", "right_button"]:
+            button = "_{}".format(button)
             # Remove previous callbak if needed
             GPIO.remove_event_detect(getattr(self, button))
             # Add standard callbacks
@@ -109,10 +110,10 @@ class Wings():
 
         callbacks = getattr(self, "_{}_callbacks".format(side))
         if callback in callbacks:
-            self.logger.warning("Callback `%s` already registered for `%s` wing",
-                                callback.__name__, side)
+            self._logger.warning("Callback `%s` already registered for `%s` wing",
+                                 callback.__name__, side)
         else:
-            self.logger.info("Adding callback `%s` for `%s` wing", callback.__name__, side)
+            self._logger.info("Adding callback `%s` for `%s` wing", callback.__name__, side)
             callbacks.add(callback)
 
     def del_callback(self, side: str, callback):
@@ -122,10 +123,10 @@ class Wings():
 
         callbacks = getattr(self, "_{}_callbacks".format(side))
         if callback not in callbacks:
-            self.logger.warning("Callback `%s` not registered for `%s` wing",
-                                callback.__name__, side)
+            self._logger.warning("Callback `%s` not registered for `%s` wing",
+                                 callback.__name__, side)
         else:
-            self.logger.info("Deleting callback `%s` for `%s` wing", callback.__name__, side)
+            self._logger.info("Deleting callback `%s` for `%s` wing", callback.__name__, side)
             callbacks.remove(callback)
 
     def calibrate(self):
@@ -182,46 +183,46 @@ class Wings():
         The method is called each time wings are up or down
         """
         # We have to not consider the first event
-        if self.bad_detect:
-            self.bad_detect = False
+        if self._bad_first_detect_on_move:
+            self._bad_first_detect_on_move = False
             return
         # Check if the wings are moving
         if not self.is_moving:
-            self.logger.error("Wings are not moving")
+            self._logger.error("Wings are not moving")
             return
         # Check if the wings are calibrated
         if not self.is_calibrated:
-            self.logger.error("Wings are not calibrated")
+            self._logger.error("Wings are not calibrated")
             return
-        self.logger.debug("Moving detection - Current position: %s", self.position)
+        self._logger.debug("Moving detection - Current position: %s", self.position)
         if self.position == "UP":
             self.position = "DOWN"
             self._count += 1
-            self.logger.info("Position DOWN")
+            self._logger.info("Position DOWN")
         elif self.position == "DOWN":
             self.position = "UP"
             self._count += 1
-            self.logger.info("Position UP")
+            self._logger.info("Position UP")
         else:
             raise TuxDroidWingsError("Bad posistion")
 
     def start(self):
         """Start moving wings"""
         if not self.is_moving:
-            self.bad_detect = True
-            self.logger.info("Starting moving wings")
-            GPIO.output(self.motor_direction_1, GPIO.HIGH)
+            self._bad_first_detect_on_move = True
+            self._logger.info("Starting moving wings")
+            GPIO.output(self._motor_direction_1, GPIO.HIGH)
             self.is_moving = True
 
     def set_position(self, position):
         """Move wings to a position"""
         position = position.upper()
         if position not in ["UP", "DOWN"]:
-            self.logger.error("Bad wings position")
+            self._logger.error("Bad wings position")
             raise TuxDroidWingsError("Bad position")
         # Do nothing if already in position
         if self.position == position:
-            self.logger.info("Wings already in %s position", position)
+            self._logger.info("Wings already in %s position", position)
             return
         # Start moving
         self.start()
@@ -234,12 +235,12 @@ class Wings():
 
     def up(self):  # pylint: disable=C0103
         """Move wings up"""
-        self.logger.info("Move wings up")
+        self._logger.info("Move wings up")
         self.set_position("UP")
 
     def down(self):
         """Move wings down"""
-        self.logger.info("Move wings down")
+        self._logger.info("Move wings down")
         self.set_position("DOWN")
 
     def move(self, times):
@@ -260,9 +261,9 @@ class Wings():
     def stop(self):
         """Stop moving wings"""
         if self.is_moving:
-            self.logger.info("Stop wings")
+            self._logger.info("Stop wings")
             self.is_moving = False
-            GPIO.output(self.motor_direction_1, GPIO.LOW)
-            GPIO.output(self.motor_direction_2, GPIO.HIGH)
+            GPIO.output(self._motor_direction_1, GPIO.LOW)
+            GPIO.output(self._motor_direction_2, GPIO.HIGH)
             time.sleep(0.02)
-            GPIO.output(self.motor_direction_2, GPIO.LOW)
+            GPIO.output(self._motor_direction_2, GPIO.LOW)

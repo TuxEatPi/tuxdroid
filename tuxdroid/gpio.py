@@ -46,7 +46,6 @@ class _FakeGPIO():
             callback = self.callbacks.get(moving_sensor_gpio)
             if callback:
                 func = callback.get(self.RISING)
-                print(func)
                 if func:
                     func(moving_sensor_gpio)
             # Wait for next up

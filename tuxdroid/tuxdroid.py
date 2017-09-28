@@ -16,7 +16,7 @@ class TuxDroid():
     def __init__(self, config, logging_level=logging.INFO):
         # Get logger
         self.logging_level = logging_level
-        self.logger = None
+        self._logger = None
         self._get_logger()
         # Set GPIO
         GPIO.setmode(GPIO.BCM)
@@ -35,12 +35,12 @@ class TuxDroid():
 
     def _get_logger(self):
         """Get logger"""
-        self.logger = logging.getLogger("tuxdroid")
-        self.logger.setLevel(self.logging_level)
+        self._logger = logging.getLogger("tuxdroid")
+        self._logger.setLevel(self.logging_level)
         console_handler = logging.StreamHandler()
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(name)s - %(message)s')
         console_handler.setFormatter(formatter)
-        self.logger.addHandler(console_handler)
+        self._logger.addHandler(console_handler)
 
     def _check_config(self):
         """Validate config"""
