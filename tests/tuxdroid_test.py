@@ -3,7 +3,7 @@ import time
 import pytest
 
 from tuxdroid.tuxdroid import TuxDroid
-from tuxdroid.errors import TuxDroidError, TuxDroidWingsError
+from tuxdroid.errors import TuxDroidError, TuxDroidWingsError, TuxDroidHeadError
 
 
 class TestTux(object):
@@ -21,7 +21,23 @@ class TestTux(object):
                                      "moving_sensor": 26,
                                      "motor_direction_1": 19,
                                      "motor_direction_2": 13,
-                                    }}}
+                                     }
+                            },
+                  "head": {"gpio": {"head_button": 12},
+                           "mouth": {"gpio": {"opened_sensor": 21,
+                                              "closed_sensor": 20,
+                                              "motor": 16,
+                                              },
+                                    },
+                           "eyes": {"gpio": {"opened_sensor": 7,
+                                             "closed_sensor": 8,
+                                             "motor": 25,
+                                             "left_led": 23,
+                                             "right_led": 24,
+                                              },
+                                    },
+                           },
+                  }
         tux = TuxDroid(config)
         # Test wigs move
         assert tux.wings.position == "DOWN"
@@ -89,16 +105,18 @@ class TestTux(object):
             tux = TuxDroid(config)
 
     def test_tux_badconfig_03(self):
-        config = {'wings': {}}
+        config = {'wings': {}, "head": {}}
         with pytest.raises(TuxDroidError) as exp:
             tux = TuxDroid(config)
 
     def test_tux_badconfig_04(self):
-        config = {'wings': {'gpio': {'missing': 4}}}
-        with pytest.raises(TuxDroidWingsError) as exp:
+        config = {'wings': {'gpio': {'missing': 4}},
+                  "head": {"gpio": {'missing': 5}}}
+        with pytest.raises(TuxDroidHeadError) as exp:
             tux = TuxDroid(config)
 
     def test_tux_badconfig_05(self):
-        config = {'wings': {'gpio': {'left_button': 'badid'}}}
-        with pytest.raises(TuxDroidWingsError) as exp:
+        config = {'wings': {'gpio': {'left_button': 'badid'}},
+                  "head": { "gpio": {'head_button': 'badid'}}}
+        with pytest.raises(TuxDroidHeadError) as exp:
             tux = TuxDroid(config)

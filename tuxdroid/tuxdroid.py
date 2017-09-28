@@ -6,6 +6,7 @@ import yaml
 
 from tuxdroid.gpio import GPIO, FAKE_GPIO
 from tuxdroid.wings import Wings
+from tuxdroid.head import Head
 from tuxdroid.errors import TuxDroidError
 
 
@@ -20,13 +21,15 @@ class TuxDroid():
         # Set GPIO
         GPIO.setmode(GPIO.BCM)
 
-        self._parts = ('wings',)
+        self._parts = ('wings', 'head')
         # Configuration
         self._config = config
         self._check_config()
         # Handle fake GPIO
         if FAKE_GPIO:
             GPIO.set_config_(self.config)
+        # Head
+        self.head = Head(self.config['head'])
         # Wings
         self.wings = Wings(self.config['wings'])
 

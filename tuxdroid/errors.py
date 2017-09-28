@@ -9,3 +9,18 @@ class TuxDroidError(Exception):
 class TuxDroidWingsError(TuxDroidError):
     """class for wings exceptions"""
     pass
+
+
+class TuxDroidHeadError(TuxDroidError):
+    """class for wings exceptions"""
+    pass
+
+
+class TuxDroidEyesError(TuxDroidError):
+    """class for wings exceptions"""
+    pass
+
+
+class TuxDroidHMonthError(TuxDroidError):
+    """class for wings exceptions"""
+    pass
