@@ -55,17 +55,18 @@ class Head():
                 raise TuxDroidHeadError("Missing `%s` section in head config",
                                         subcomponent)
 
-    def _button_detected(self, channel):
+    def _button_detected(self, gpio_id):
         """Callback for all buttons"""
-        self._logger.info("Button %s pressed", channel)
+        self._logger.info("Button %s pressed", gpio_id)
         # callbacks
-        if channel == self._head_button:
+        if gpio_id == self._head_button:
             for callback in self._head_callbacks:
                 self._logger.debug("Calling: %s", callback.__name__)
                 self._thread_pool.submit(callback)
         else:
             # Should be impossible
             self._logger.error("Bad button")
+            raise TuxDroidHeadError("Bad GPIO id when button pressed")
 
     def _set_callbacks(self):
         """Set button callbacks"""

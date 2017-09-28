@@ -74,21 +74,22 @@ class Wings():
             except ValueError:
                 raise TuxDroidWingsError("`gpio.%s` should be a integer", gpio_name)
 
-    def _button_detected(self, channel):
+    def _button_detected(self, gpio_id):
         """Callback for all buttons"""
-        self._logger.info("Button %s pressed", channel)
+        self._logger.info("Button %s pressed", gpio_id)
         # callbacks
-        if channel == self._right_button:
+        if gpio_id == self._right_button:
             for callback in self._right_callbacks:
                 self._logger.debug("Calling: %s", callback.__name__)
                 self._thread_pool.submit(callback)
-        elif channel == self._left_button:
+        elif gpio_id == self._left_button:
             for callback in self._left_callbacks:
                 self._logger.debug("Calling: %s", callback.__name__)
                 self._thread_pool.submit(callback)
         else:
             # Should be impossible
             self._logger.error("Bad button")
+            raise TuxDroidWingsError("Bad GPIO id when button pressed")
 
     def _set_callbacks(self):
         """Set button callbacks"""
@@ -177,11 +178,15 @@ class Wings():
                               callback=self._wings_rotation_callback,
                               bouncetime=int(BOUNCE_TIME * 1000))
 
-    def _wings_rotation_callback(self, channel):  # pylint: disable=W0613
+    def _wings_rotation_callback(self, gpio_id):
         """Callback method detecting wings movement
 
         The method is called each time wings are up or down
         """
+        # Check if the gpio_id is correct
+        if gpio_id != self.moving_sensor:
+            self._logger.error("Bad moving sensor GPIO id")
+            raise TuxDroidWingsError("Bad GPIO id when moving")
         # We have to not consider the first event
         if self._bad_first_detect_on_move:
             self._bad_first_detect_on_move = False
@@ -204,7 +209,7 @@ class Wings():
             self._count += 1
             self._logger.info("Position UP")
         else:
-            raise TuxDroidWingsError("Bad posistion")
+            raise TuxDroidWingsError("Bad position")
 
     def start(self):
         """Start moving wings"""
