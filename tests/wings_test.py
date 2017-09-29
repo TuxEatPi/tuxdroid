@@ -78,18 +78,18 @@ class TestWings(object):
         with pytest.raises(TuxDroidWingsError) as exp:
             wings._wings_rotation_callback('bad_gpio_id')
         old_position = wings.position
-        wings._wings_rotation_callback(wings.moving_sensor)
+        wings._wings_rotation_callback(wings._moving_sensor)
         assert old_position == wings.position
 
         wings.is_calibrated = False
         wings.is_moving = True
-        wings._wings_rotation_callback(wings.moving_sensor)
+        wings._wings_rotation_callback(wings._moving_sensor)
         assert old_position == wings.position
 
         wings.is_calibrated = True
         wings.position = "BAD_POSITION"
         with pytest.raises(TuxDroidWingsError) as exp:
-            wings._wings_rotation_callback(wings.moving_sensor)        
+            wings._wings_rotation_callback(wings._moving_sensor)
 
         wings.stop()
 

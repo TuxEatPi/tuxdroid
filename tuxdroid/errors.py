@@ -21,6 +21,6 @@ class TuxDroidEyesError(TuxDroidError):
     pass
 
 
-class TuxDroidHMonthError(TuxDroidError):
+class TuxDroidHMouthError(TuxDroidError):
     """class for wings exceptions"""
     pass

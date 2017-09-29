@@ -41,8 +41,8 @@ class Wings():
         GPIO.setup(self._left_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         self._right_button = int(config.get("gpio").get('right_button'))
         GPIO.setup(self._right_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-        self.moving_sensor = int(config.get("gpio").get('moving_sensor'))
-        GPIO.setup(self.moving_sensor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+        self._moving_sensor = int(config.get("gpio").get('moving_sensor'))
+        GPIO.setup(self._moving_sensor, GPIO.IN, pull_up_down=GPIO.PUD_UP)
         self._motor_direction_1 = int(config.get("gpio").get('motor_direction_1'))
         GPIO.setup(self._motor_direction_1, GPIO.OUT)
         self._motor_direction_2 = int(config.get("gpio").get('motor_direction_2'))
@@ -93,8 +93,7 @@ class Wings():
 
     def _set_callbacks(self):
         """Set button callbacks"""
-        for button in ["left_button", "right_button"]:
-            button = "_{}".format(button)
+        for button in ("_left_button", "_right_button"):
             # Remove previous callbak if needed
             GPIO.remove_event_detect(getattr(self, button))
             # Add standard callbacks
@@ -147,7 +146,7 @@ class Wings():
         # Start init
         while wings_nb_moves < 4 or self.position == "UP":
             # Wait for Rising edge
-            GPIO.wait_for_edge(self.moving_sensor, GPIO.RISING)
+            GPIO.wait_for_edge(self._moving_sensor, GPIO.RISING)
             # Time between each detection
             wings_dectection = time.time()
             # We need at least one another detection
@@ -173,8 +172,8 @@ class Wings():
         # Wings should be down
         self.is_calibrated = True
         # Set callback for wings move detection
-        GPIO.remove_event_detect(self.moving_sensor)
-        GPIO.add_event_detect(self.moving_sensor, GPIO.RISING,
+        GPIO.remove_event_detect(self._moving_sensor)
+        GPIO.add_event_detect(self._moving_sensor, GPIO.RISING,
                               callback=self._wings_rotation_callback,
                               bouncetime=int(BOUNCE_TIME * 1000))
 
@@ -184,7 +183,7 @@ class Wings():
         The method is called each time wings are up or down
         """
         # Check if the gpio_id is correct
-        if gpio_id != self.moving_sensor:
+        if gpio_id != self._moving_sensor:
             self._logger.error("Bad moving sensor GPIO id")
             raise TuxDroidWingsError("Bad GPIO id when moving")
         # We have to not consider the first event
