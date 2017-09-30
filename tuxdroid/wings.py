@@ -110,10 +110,10 @@ class Wings():
 
         callbacks = getattr(self, "_{}_callbacks".format(side))
         if callback in callbacks:
-            self._logger.warning("Callback `%s` already registered for `%s` wing",
+            self._logger.warning("Callback `%s` already registered to `%s` wing",
                                  callback.__name__, side)
         else:
-            self._logger.info("Adding callback `%s` for `%s` wing", callback.__name__, side)
+            self._logger.info("Adding callback `%s` to `%s` wing", callback.__name__, side)
             callbacks.add(callback)
 
     def del_callback(self, side: str, callback):
@@ -123,10 +123,10 @@ class Wings():
 
         callbacks = getattr(self, "_{}_callbacks".format(side))
         if callback not in callbacks:
-            self._logger.warning("Callback `%s` not registered for `%s` wing",
+            self._logger.warning("Callback `%s` not registered to `%s` wing",
                                  callback.__name__, side)
         else:
-            self._logger.info("Deleting callback `%s` for `%s` wing", callback.__name__, side)
+            self._logger.info("Deleting callback `%s` to `%s` wing", callback.__name__, side)
             callbacks.remove(callback)
 
     def calibrate(self):

@@ -5,6 +5,7 @@ import types
 
 from tuxdroid.gpio import GPIO
 from tuxdroid.errors import TuxDroidHeadError
+from tuxdroid.mouth import Mouth
 
 
 # TODO Improve button bounce time
@@ -35,6 +36,15 @@ class Head():
         # Set callbacks
         self._head_callbacks = set()
         self._set_callbacks()
+
+        # Init subcomponent
+        self.mouth = Mouth(self, config.get('mouth'))
+        self._motor_mouth = int(config.get("mouth").get("gpio").get('motor'))
+        GPIO.setup(self._motor_mouth, GPIO.OUT)
+        self._motor_eyes = int(config.get("eyes").get("gpio").get('motor'))
+        GPIO.setup(self._motor_eyes, GPIO.OUT)
+        # Calibration
+        self.mouth.calibrate()
         # Set it as ready
         self.is_ready = True
 
@@ -85,15 +95,50 @@ class Head():
             raise TuxDroidHeadError("Callback `%s` is not a function", callback)
 
         if callback in self._head_callbacks:
-            self._logger.warning("Callback `%s` already registered for head", callback.__name__)
+            self._logger.warning("Callback `%s` already registered to head", callback.__name__)
         else:
-            self._logger.info("Adding callback `%s` for head", callback.__name__)
+            self._logger.info("Adding callback `%s` to head", callback.__name__)
             self._head_callbacks.add(callback)
 
     def del_callback(self, callback):
         """Delete callback"""
         if callback not in self._head_callbacks:
-            self._logger.warning("Callback `%s` not registered for head", callback.__name__)
+            self._logger.warning("Callback `%s` not registered to head", callback.__name__)
         else:
-            self._logger.info("Deleting callback `%s` for head", callback.__name__)
+            self._logger.info("Deleting callback `%s`to head", callback.__name__)
             self._head_callbacks.remove(callback)
+
+    def start(self, component):
+        if component not in ("eyes", "mouth"):
+            raise TuxDroidHeadError("Component should be `eyes` or `mouth`")
+        # TODO: handle
+        # * mouth can NOT move when eyes are moving
+        # * eyes can NOT move when mouth is moving
+        elif component == "mouth":
+            if not self.mouth.is_moving: 
+                self.mouth._count = 0
+                self.mouth._bad_first_detect_on_move = True 
+                self.mouth._logger.info("Starting moving mouth") 
+                GPIO.output(self._motor_eyes, GPIO.LOW) 
+                GPIO.output(self._motor_mouth, GPIO.HIGH) 
+                self.mouth.is_moving = True
+        elif component == "eyes":
+            if not self.eyes.is_moving: 
+                self.eyes._count = 0
+                self.eyes._bad_first_detect_on_move = True 
+                self.eyes._logger.info("Starting moving eyes") 
+                GPIO.output(self._motor_mouth, GPIO.LOW) 
+                GPIO.output(self._motor_eyes, GPIO.HIGH) 
+                self.eyes.is_moving = True
+
+    def stop(self, component=None):
+        if component is None:
+            self._logger.info("Stopping mouth and eyes")
+        elif not hasattr(self, component):
+            raise TuxDroidHeadError("Component should be `eyes` or `mouth`")
+        else:
+            getattr(self, component)._logger.info("Stopping {}".format(component))
+        GPIO.output(self._motor_mouth, GPIO.LOW)
+        GPIO.output(self._motor_eyes, GPIO.LOW)
+        self.mouth.is_moving = False
+#        self.eyes.is_moving = False
