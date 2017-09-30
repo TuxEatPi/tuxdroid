@@ -68,6 +68,72 @@ class _FakeGPIO():
         """Simulate stop moving wings"""
         self._run_wings = False
 
+    def _mouth_start(self):
+        self._run_mouth = True
+        opened_sensor_gpio = self.config.get('head', {}).get('mouth', {}).get('gpio', {}).get('opened_sensor', {})
+        closed_sensor_gpio = self.config.get('head', {}).get('mouth', {}).get('gpio', {}).get('closed_sensor', {})
+        while self._run_mouth:
+            # Wings moving sensor edge rising
+            self.waits[self.RISING][opened_sensor_gpio] = True
+            # Wings moving sensor callback
+            callback = self.callbacks.get(opened_sensor_gpio)
+            if callback:
+                func = callback.get(self.RISING)
+                if func:
+                    func(opened_sensor_gpio)
+            # Wait for next up
+            time.sleep(0.3)
+            # stop the move if asked
+            if not self._run_mouth:
+                break
+            # Wings moving sensor edge rising
+            self.waits[self.RISING][closed_sensor_gpio] = True
+            # Wings moving sensor callback
+            callback = self.callbacks.get(closed_sensor_gpio)
+            if callback:
+                func = callback.get(self.RISING)
+                if func:
+                    func(closed_sensor_gpio)
+            # Wait for next down
+            time.sleep(0.3)
+
+    def _mouth_stop(self):
+        """Simulate stop moving mouth"""
+        self._run_mouth = False
+
+    def _eyes_start(self):
+        self._run_eyes = True
+        opened_sensor_gpio = self.config.get('head', {}).get('eyes', {}).get('gpio', {}).get('opened_sensor', {})
+        closed_sensor_gpio = self.config.get('head', {}).get('eyes', {}).get('gpio', {}).get('closed_sensor', {})
+        while self._run_eyes:
+            # Wings moving sensor edge rising
+            self.waits[self.RISING][opened_sensor_gpio] = True
+            # Wings moving sensor callback
+            callback = self.callbacks.get(opened_sensor_gpio)
+            if callback:
+                func = callback.get(self.RISING)
+                if func:
+                    func(opened_sensor_gpio)
+            # Wait for next up
+            time.sleep(0.3)
+            # stop the move if asked
+            if not self._run_eyes:
+                break
+            # Wings moving sensor edge rising
+            self.waits[self.RISING][closed_sensor_gpio] = True
+            # Wings moving sensor callback
+            callback = self.callbacks.get(closed_sensor_gpio)
+            if callback:
+                func = callback.get(self.RISING)
+                if func:
+                    func(closed_sensor_gpio)
+            # Wait for next down
+            time.sleep(0.3)
+
+    def _mouth_stop(self):
+        """Simulate stop moving mouth"""
+        self._run_mouth = False
+
     def setmode(self, mode):
         """Fake GPIO set mode"""
         pass
@@ -99,12 +165,25 @@ class _FakeGPIO():
 
     def output(self, channel, output_type):
         """Simulate set GPIO output"""
-        if channel == self.config.get('wings').get('gpio').get('motor_direction_1'):
+        wings_motor_gpio = self.config.get('wings').get('gpio').get('motor_direction_1')
+        mouth_motor_gpio = self.config.get('head').ge('mouth').get('gpio').get('motor')
+        eyes_motor_gpio = self.config.get('head').ge('eyes').get('gpio').get('motor')
+        if channel == wings_motor_gpio:
             # Simulate GPIO.output to simulate wings start or stop
             if output_type == self.HIGH:
                 self._thread_pool.submit(self._wings_start)
             elif output_type == self.LOW:
                 self._wings_stop()
+        elif channel == mouth_motor_gpio:
+            if output_type == self.HIGH:
+                self._thread_pool.submit(self._mouth_start)
+            elif output_type == self.LOW:
+                self._mouth_stop()
+        elif channel == eyes_motor_gpio:
+            if output_type == self.HIGH:
+                self._thread_pool.submit(self._eyes_start)
+            elif output_type == self.LOW:
+                self._eyes_stop()
 
 
 # Set GPIO
