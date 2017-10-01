@@ -29,7 +29,7 @@ class Wings():
         self.position = None
         # Privates
         self._count = 0
-        self._bad_first_detect_on_move = False
+        self._motor_start_time = None
         self._gpio_names = ('left_button', 'right_button', 'moving_sensor',
                             'motor_direction_1', 'motor_direction_2')
         # Validate config
@@ -182,17 +182,21 @@ class Wings():
 
         The method is called each time wings are up or down
         """
+        # We have to not consider the first event
+        if time.time() - self._motor_start_time < 0.1:
+            # Maybe we want a debug ?
+            self._logger.warning("Startup wings event detected, ignoring it")
+            return
+
         # Check if the gpio_id is correct
         if gpio_id != self._moving_sensor:
             self._logger.error("Bad moving sensor GPIO id")
             raise TuxDroidWingsError("Bad GPIO id when moving")
-        # We have to not consider the first event
-        if self._bad_first_detect_on_move:
-            self._bad_first_detect_on_move = False
-            return
         # Check if the wings are moving
         if not self.is_moving:
-            self._logger.error("Wings are not moving")
+            # Maybe we want a debug ?
+            self._logger.warning("Wings movement detected but wings are not moving. "
+                                 "Maybe someone pressed on the right wing")
             return
         # Check if the wings are calibrated
         if not self.is_calibrated:
@@ -213,7 +217,11 @@ class Wings():
     def start(self):
         """Start moving wings"""
         if not self.is_moving:
-            self._bad_first_detect_on_move = True
+            # If we pressed on right wing button when wings are down
+            # the moving_sensor will stay ON (1)
+            # So we don't need remove the first bad detection
+            self._motor_start_time = time.time()
+            # Starting wings
             self._logger.info("Starting moving wings")
             GPIO.output(self._motor_direction_1, GPIO.HIGH)
             self.is_moving = True
@@ -269,5 +277,5 @@ class Wings():
             self.is_moving = False
             GPIO.output(self._motor_direction_1, GPIO.LOW)
             GPIO.output(self._motor_direction_2, GPIO.HIGH)
-            time.sleep(0.02)
+            time.sleep(0.03)
             GPIO.output(self._motor_direction_2, GPIO.LOW)

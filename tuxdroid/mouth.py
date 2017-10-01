@@ -1,6 +1,7 @@
 """Module defining TuxDroid Mouth"""
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import time
 import types
 
 from tuxdroid.gpio import GPIO
@@ -29,7 +30,7 @@ class Mouth():
         self.position = None
         # Privates
         self._count = 0
-        self._bad_first_detect_on_move = False
+        self._motor_start_time = None
         self._gpio_names = ('opened_sensor', 'closed_sensor', 'motor')
         # Validate config
         self.config = config
@@ -73,14 +74,16 @@ class Mouth():
 
     def _opened_event(self, gpio_id):
         """Opened mouth event callback"""
+        # We have to not consider the first event
+        if time.time() - self._motor_start_time < 0.2:
+            # Maybe we want a debug ?
+            self._logger.warning("Startup wings event detected, ignoring it")
+            return
+
         # Check if the gpio_id is correct
         if gpio_id != self._opened_sensor:
             self._logger.error("Bad opened sensor GPIO id")
             raise TuxDroidMouthError("Bad GPIO id when opening")
-        # We have to not consider the first event
-        if self._bad_first_detect_on_move:
-            self._bad_first_detect_on_move = False
-            return
 
         self.position = "OPENED"
         self._count += 1
@@ -90,14 +93,16 @@ class Mouth():
 
     def _closed_event(self, gpio_id):
         """Closed mouth event callback"""
+        # We have to not consider the first event
+        if time.time() - self._motor_start_time < 0.2:
+            # Maybe we want a debug ?
+            self._logger.warning("Startup wings event detected, ignoring it")
+            return
+
         # Check if the gpio_id is correct
         if gpio_id != self._closed_sensor:
             self._logger.error("Bad closed sensor GPIO id")
             raise TuxDroidMouthError("Bad GPIO id when closing")
-        # We have to not consider the first event
-        if self._bad_first_detect_on_move:
-            self._bad_first_detect_on_move = False
-            return
 
         self.position = "CLOSED"
         self._count += 1

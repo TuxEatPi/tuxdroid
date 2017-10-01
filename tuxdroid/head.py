@@ -1,6 +1,7 @@
 """Module defining TuxDroid Head"""
 from concurrent.futures import ThreadPoolExecutor
 import logging
+import time
 import types
 
 from tuxdroid.gpio import GPIO
@@ -115,18 +116,29 @@ class Head():
         # TODO: handle
         # * mouth can NOT move when eyes are moving
         # * eyes can NOT move when mouth is moving
+
+
+
         elif component == "mouth":
             if not self.mouth.is_moving:
+                # Remove the startup moving event
+                # So we don't need remove the first bad detection
+                self.mouth._motor_start_time = time.time()
+                # Reset movement count
                 self.mouth._count = 0
-                self.mouth._bad_first_detect_on_move = True
+                # Starting moving
                 self.mouth._logger.info("Starting moving mouth")
                 GPIO.output(self._motor_eyes, GPIO.LOW)
                 GPIO.output(self._motor_mouth, GPIO.HIGH)
                 self.mouth.is_moving = True
 #        elif component == "eyes":
 #            if not self.eyes.is_moving:
+#                # Remove the startup moving event
+#                # So we don't need remove the first bad detection
+#                self.eyes._motor_start_time = time.time()
+#                # Reset movement count
 #                self.eyes._count = 0
-#                self.eyes._bad_first_detect_on_move = True
+#                # Starting moving
 #                self.eyes._logger.info("Starting moving eyes")
 #                GPIO.output(self._motor_mouth, GPIO.LOW)
 #                GPIO.output(self._motor_eyes, GPIO.HIGH)
