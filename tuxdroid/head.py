@@ -109,29 +109,31 @@ class Head():
             self._head_callbacks.remove(callback)
 
     def start(self, component):
+        """Start moving eyes or mouth"""
         if component not in ("eyes", "mouth"):
             raise TuxDroidHeadError("Component should be `eyes` or `mouth`")
         # TODO: handle
         # * mouth can NOT move when eyes are moving
         # * eyes can NOT move when mouth is moving
         elif component == "mouth":
-            if not self.mouth.is_moving: 
+            if not self.mouth.is_moving:
                 self.mouth._count = 0
-                self.mouth._bad_first_detect_on_move = True 
-                self.mouth._logger.info("Starting moving mouth") 
-                GPIO.output(self._motor_eyes, GPIO.LOW) 
-                GPIO.output(self._motor_mouth, GPIO.HIGH) 
+                self.mouth._bad_first_detect_on_move = True
+                self.mouth._logger.info("Starting moving mouth")
+                GPIO.output(self._motor_eyes, GPIO.LOW)
+                GPIO.output(self._motor_mouth, GPIO.HIGH)
                 self.mouth.is_moving = True
-        elif component == "eyes":
-            if not self.eyes.is_moving: 
-                self.eyes._count = 0
-                self.eyes._bad_first_detect_on_move = True 
-                self.eyes._logger.info("Starting moving eyes") 
-                GPIO.output(self._motor_mouth, GPIO.LOW) 
-                GPIO.output(self._motor_eyes, GPIO.HIGH) 
-                self.eyes.is_moving = True
+#        elif component == "eyes":
+#            if not self.eyes.is_moving:
+#                self.eyes._count = 0
+#                self.eyes._bad_first_detect_on_move = True
+#                self.eyes._logger.info("Starting moving eyes")
+#                GPIO.output(self._motor_mouth, GPIO.LOW)
+#                GPIO.output(self._motor_eyes, GPIO.HIGH)
+#                self.eyes.is_moving = True
 
     def stop(self, component=None):
+        """Stop moving eyes and mouth"""
         if component is None:
             self._logger.info("Stopping mouth and eyes")
         elif not hasattr(self, component):

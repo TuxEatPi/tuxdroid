@@ -1,7 +1,6 @@
 """Module defining TuxDroid Mouth"""
 from concurrent.futures import ThreadPoolExecutor
 import logging
-import time
 import types
 
 from tuxdroid.gpio import GPIO
@@ -44,8 +43,6 @@ class Mouth():
         # Callbacks
         self._opened_callbacks = set()
         self._closed_callbacks = set()
-        # Set callbacks
-#        self._set_callbacks()
         # Thread pool
         self._thread_pool = ThreadPoolExecutor()
         # we need to call calibrate() which is done by head component
@@ -67,18 +64,19 @@ class Mouth():
         """Set button callbacks"""
         GPIO.remove_event_detect(self._opened_sensor)
         GPIO.add_event_detect(self._opened_sensor, GPIO.RISING,
-                              callback=self._open_event,
+                              callback=self._opened_event,
                               bouncetime=int(BUTTON_BOUNCE_TIME * 1000))
         GPIO.remove_event_detect(self._closed_sensor)
         GPIO.add_event_detect(self._closed_sensor, GPIO.RISING,
-                              callback=self._close_event,
+                              callback=self._closed_event,
                               bouncetime=int(BUTTON_BOUNCE_TIME * 1000))
 
-    def _open_event(self, gpio_id):
+    def _opened_event(self, gpio_id):
+        """Opened mouth event callback"""
         # Check if the gpio_id is correct
         if gpio_id != self._opened_sensor:
             self._logger.error("Bad opened sensor GPIO id")
-            raise TuxDroidWingsError("Bad GPIO id when opening")
+            raise TuxDroidMouthError("Bad GPIO id when opening")
         # We have to not consider the first event
         if self._bad_first_detect_on_move:
             self._bad_first_detect_on_move = False
@@ -89,12 +87,13 @@ class Mouth():
         for callback in self._opened_callbacks:
             self._logger.debug("Calling: %s", callback.__name__)
             self._thread_pool.submit(callback)
-        
-    def _close_event(self, gpio_id):
+
+    def _closed_event(self, gpio_id):
+        """Closed mouth event callback"""
         # Check if the gpio_id is correct
         if gpio_id != self._closed_sensor:
             self._logger.error("Bad closed sensor GPIO id")
-            raise TuxDroidWingsError("Bad GPIO id when closing")
+            raise TuxDroidMouthError("Bad GPIO id when closing")
         # We have to not consider the first event
         if self._bad_first_detect_on_move:
             self._bad_first_detect_on_move = False
@@ -140,13 +139,9 @@ class Mouth():
         self._logger.info("Mouth calibration starting")
         # Init variables
         mouth_nb_moves = 0
-        mouth_dectection = None
-        last_mouth_detection = None
-        last_dectection_time = None
         # Start moving
         self.start()
         # Start init
-        old_position = self.position
         while mouth_nb_moves < 2:
             # Wait for Rising edge
             GPIO.wait_for_edge(self._closed_sensor, GPIO.RISING)
