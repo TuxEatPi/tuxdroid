@@ -2,8 +2,8 @@ import time
 
 import pytest
 
-from tuxdroid.tuxdroid import TuxDroid
 from tuxdroid.head import Head
+from tuxdroid.gpio import GPIO
 from tuxdroid.errors import TuxDroidHeadError
 
 
@@ -30,6 +30,7 @@ class TestTux(object):
                                     },
                            },
                   }
+        GPIO.set_config_({"head": config})
         head = Head(config)
         head.add_callback(head_callback)
         assert head_callback in head._head_callbacks

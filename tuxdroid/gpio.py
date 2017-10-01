@@ -76,6 +76,7 @@ class _FakeGPIO():
         closed_sensor_gpio = self.config.get('head', {}).get('mouth', {}).\
             get('gpio', {}).get('closed_sensor', {})
         while self._run_mouth:
+            print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
             # Wings moving sensor edge rising
             self.waits[self.RISING][opened_sensor_gpio] = True
             # Wings moving sensor callback
@@ -171,9 +172,12 @@ class _FakeGPIO():
 
     def output(self, channel, output_type):
         """Simulate set GPIO output"""
-        wings_motor_gpio = self.config.get('wings').get('gpio').get('motor_direction_1')
-        mouth_motor_gpio = self.config.get('head').ge('mouth').get('gpio').get('motor')
-        eyes_motor_gpio = self.config.get('head').ge('eyes').get('gpio').get('motor')
+        wings_motor_gpio = self.config.get('wings', {}).get('gpio', {}).\
+            get('motor_direction_1', {})
+        mouth_motor_gpio = self.config.get('head', {}).get('mouth', {}).\
+            get('gpio', {}).get('motor')
+        eyes_motor_gpio = self.config.get('head', {}).get('eyes', {}).\
+            get('gpio', {}).get('motor')
         if channel == wings_motor_gpio:
             # Simulate GPIO.output to simulate wings start or stop
             if output_type == self.HIGH:
