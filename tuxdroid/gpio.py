@@ -76,7 +76,6 @@ class _FakeGPIO():
         closed_sensor_gpio = self.config.get('head', {}).get('mouth', {}).\
             get('gpio', {}).get('closed_sensor', {})
         while self._run_mouth:
-            print("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
             # Wings moving sensor edge rising
             self.waits[self.RISING][opened_sensor_gpio] = True
             # Wings moving sensor callback
