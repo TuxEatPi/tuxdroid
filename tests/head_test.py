@@ -1,27 +1,22 @@
 import time
+from unittest.mock import MagicMock
 
 import pytest
 
 from tuxdroid.head import Head
+from tuxdroid.mouth import Mouth
+from tuxdroid.eyes import Eyes
 from tuxdroid.gpio import GPIO
-from tuxdroid.errors import TuxDroidHeadError, TuxDroidMouthError
+from tuxdroid.errors import TuxDroidHeadError, TuxDroidMouthError, TuxDroidEyesError
 
 
 class TestTux(object):
 
     def test_head_01(self):
-
         # Defining callbacks
         self.head_pressed = False
         def head_callback():
             self.head_pressed = True
-        self.mouth_opened = False
-        def mouth_opened_callback():
-            self.mouth_opened = True
-        self.mouth_closed = False
-        def mouth_closed_callback():
-            self.mouth_closed = True
-
 
         config = {"gpio": {"head_button": 12},
                   "mouth": {"gpio": {"opened_sensor": 21,
@@ -54,35 +49,13 @@ class TestTux(object):
             head.add_callback('bad_callback')
         # Bad button
         with pytest.raises(TuxDroidHeadError) as exp:
-            head._button_detected('bag_gpio')
-
-        # Mouth
-        assert head.mouth.position == "CLOSED"
-        head.mouth.open()
-        head.mouth.open()
-        assert head.mouth.position == "OPENED"
-        head.mouth.close()
-        assert head.mouth.position == "CLOSED"
-        with pytest.raises(TuxDroidMouthError) as exp:
-            head.mouth.set_position("BAD_POSITION")
-
-        head.mouth.add_callback("closed", mouth_closed_callback)
-        assert mouth_closed_callback in head.mouth._closed_callbacks
-        head.mouth.add_callback("opened", mouth_opened_callback)
-        assert mouth_opened_callback in head.mouth._opened_callbacks
-        head.mouth.add_callback("opened", mouth_opened_callback)
-        assert mouth_opened_callback in head.mouth._opened_callbacks
-
-        head.mouth._opened_event(21)
-        assert self.mouth_opened == True
-        head.mouth._closed_event(20)
-        assert self.mouth_closed == True
-
-        head.mouth.del_callback("opened", mouth_opened_callback)
-        assert mouth_opened_callback not in head.mouth._opened_callbacks
-
-#        head.mouth.move(1)
-#        assert head.mouth.position == "OPENED"
+            head._button_detected('bad_gpio')
+        # Bad sub component
+        with pytest.raises(TuxDroidHeadError) as exp:
+            head.start('bad_subcomponent')
+        with pytest.raises(TuxDroidHeadError) as exp:
+            head.stop('bad_subcomponent')
+        head.stop()
 
     def test_tux_badconfig_head(self):
         config = {}

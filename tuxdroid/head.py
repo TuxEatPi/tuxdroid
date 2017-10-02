@@ -7,6 +7,7 @@ import types
 from tuxdroid.gpio import GPIO
 from tuxdroid.errors import TuxDroidHeadError
 from tuxdroid.mouth import Mouth
+from tuxdroid.eyes import Eyes
 
 
 # TODO Improve button bounce time
@@ -40,11 +41,14 @@ class Head():
 
         # Init subcomponent
         self.mouth = Mouth(self, config.get('mouth'))
+        self.eyes = Eyes(self, config.get('eyes'))
+
         self._motor_mouth = int(config.get("mouth").get("gpio").get('motor'))
         GPIO.setup(self._motor_mouth, GPIO.OUT)
         self._motor_eyes = int(config.get("eyes").get("gpio").get('motor'))
         GPIO.setup(self._motor_eyes, GPIO.OUT)
         # Calibration
+        self.eyes.calibrate()
         self.mouth.calibrate()
         # Set it as ready
         self.is_ready = True
@@ -116,43 +120,40 @@ class Head():
         # TODO: handle
         # * mouth can NOT move when eyes are moving
         # * eyes can NOT move when mouth is moving
-
-
-
         elif component == "mouth":
             if not self.mouth.is_moving:
                 # Remove the startup moving event
                 # So we don't need remove the first bad detection
                 self.mouth._motor_start_time = time.time()
                 # Reset movement count
-                self.mouth._count = 0
+                self.mouth._move_count = 0
                 # Starting moving
                 self.mouth._logger.info("Starting moving mouth")
                 GPIO.output(self._motor_eyes, GPIO.LOW)
                 GPIO.output(self._motor_mouth, GPIO.HIGH)
                 self.mouth.is_moving = True
-#        elif component == "eyes":
-#            if not self.eyes.is_moving:
-#                # Remove the startup moving event
-#                # So we don't need remove the first bad detection
-#                self.eyes._motor_start_time = time.time()
-#                # Reset movement count
-#                self.eyes._count = 0
-#                # Starting moving
-#                self.eyes._logger.info("Starting moving eyes")
-#                GPIO.output(self._motor_mouth, GPIO.LOW)
-#                GPIO.output(self._motor_eyes, GPIO.HIGH)
-#                self.eyes.is_moving = True
+        elif component == "eyes":
+            if not self.eyes.is_moving:
+                # Remove the startup moving event
+                # So we don't need remove the first bad detection
+                self.eyes._motor_start_time = time.time()
+                # Reset movement count
+                self.eyes._move_count = 0
+                # Starting moving
+                self.eyes._logger.info("Starting moving eyes")
+                GPIO.output(self._motor_mouth, GPIO.LOW)
+                GPIO.output(self._motor_eyes, GPIO.HIGH)
+                self.eyes.is_moving = True
 
     def stop(self, component=None):
         """Stop moving eyes and mouth"""
         if component is None:
             self._logger.info("Stopping mouth and eyes")
-        elif not hasattr(self, component):
+        elif component not in ("eyes", "mouth"):
             raise TuxDroidHeadError("Component should be `eyes` or `mouth`")
         else:
             getattr(self, component)._logger.info("Stopping {}".format(component))
         GPIO.output(self._motor_mouth, GPIO.LOW)
         GPIO.output(self._motor_eyes, GPIO.LOW)
         self.mouth.is_moving = False
-#        self.eyes.is_moving = False
+        self.eyes.is_moving = False

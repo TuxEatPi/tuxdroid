@@ -76,6 +76,8 @@ class _FakeGPIO():
         closed_sensor_gpio = self.config.get('head', {}).get('mouth', {}).\
             get('gpio', {}).get('closed_sensor', {})
         while self._run_mouth:
+            # Wait for next up
+            time.sleep(0.5)
             # Wings moving sensor edge rising
             self.waits[self.RISING][opened_sensor_gpio] = True
             # Wings moving sensor callback
@@ -84,7 +86,7 @@ class _FakeGPIO():
                 func = callback.get(self.RISING)
                 if func:
                     func(opened_sensor_gpio)
-            # Wait for next up
+            # Wait for next down
             time.sleep(0.5)
             # stop the move if asked
             if not self._run_mouth:
@@ -97,8 +99,6 @@ class _FakeGPIO():
                 func = callback.get(self.RISING)
                 if func:
                     func(closed_sensor_gpio)
-            # Wait for next down
-            time.sleep(0.5)
 
     def _mouth_stop(self):
         """Simulate stop moving mouth"""
