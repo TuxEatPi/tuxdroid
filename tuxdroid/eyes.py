@@ -18,7 +18,9 @@ BUTTON_BOUNCE_TIME = 0.25
 class Eyes():
     """Eyes Component
 
-    .. todo:: Missing head speed control (using PWM, need to find PWN frequency/duty cycle)
+    .. todo:: Missing led blink speed control (using PWM, need to find PWN frequency/duty cycle)
+
+    .. todo:: Missing led intensity control (using PWM, need to find PWN frequency/duty cycle)
     """
     def __init__(self, head, config: dict):
         # Get logger
