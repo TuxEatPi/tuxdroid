@@ -30,8 +30,12 @@ class TuxDroid():
             GPIO.set_config_(self.config)
         # Head
         self.head = Head(self.config['head'])
+        # Set left eye on
+        self.head.eyes.led_on("left")
         # Wings
         self.wings = Wings(self.config['wings'])
+        # Set eyes on
+        self.head.eyes.led_on()
 
     def _get_logger(self):
         """Get logger"""
@@ -58,4 +62,9 @@ class TuxDroid():
     def stop(self):
         """Stop all TuxDroid parts"""
         self.wings.stop()
+        self.wings.down()
+        self.head.stop()
+        self.head.mouth.close()
+        self.head.eyes.close()
+        self.head.eyes.led_off()
         GPIO.cleanup()
