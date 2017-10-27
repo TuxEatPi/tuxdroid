@@ -1,22 +1,22 @@
 wings:
     gpio:
-        left_button: 5
-        right_button: 6
-        moving_sensor: 26
-        motor_direction_1: 19
-        motor_direction_2: 13
+        left_button: 6
+        right_button: 5
+        moving_sensor: 12
+        motor_direction_1: 22
+        motor_direction_2: 23
 head:
     mouth:
         gpio:
             opened_sensor: 21
             closed_sensor: 20
-            motor: 16
+            motor: 25
     eyes:
         gpio:
-            opened_sensor: 7
-            closed_sensor: 8
-            motor: 25
-            left_led: 23
-            right_led: 24
+            opened_sensor: 19
+            closed_sensor: 16
+            motor: 24
+            left_led: 17
+            right_led: 18
     gpio:
-        head_button: 12
+        head_button: 27
